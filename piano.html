@@ -442,15 +442,16 @@ function changeOctave(delta) {
 document.getElementById('oct-down').addEventListener('click', () => changeOctave(-1));
 document.getElementById('oct-up').addEventListener('click', () => changeOctave(1));
 
-// ---- タブ切り替え時に全音停止 ----
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    Object.keys(activeNodes).forEach(m => stopNote(Number(m)));
-    pressedKeys.clear();
-    activePointers.clear();
-    setSustain(false);
-  }
-});
+// ---- フォーカス喪失時に全音停止 ----
+function stopAll() {
+  Object.keys(activeNodes).forEach(m => stopNote(Number(m)));
+  pianoEl.querySelectorAll('.key.active').forEach(el => el.classList.remove('active'));
+  pressedKeys.clear();
+  activePointers.clear();
+  setSustain(false);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopAll(); });
+window.addEventListener('blur', stopAll);
 
 // ---- リサイズ対応 ----
 let resizeTimer;
