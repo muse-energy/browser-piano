@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>キーボードピアノ</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,17 +17,20 @@
     font-family: 'Helvetica Neue', sans-serif;
     color: #eee;
     user-select: none;
+    -webkit-user-select: none;
+    padding: 20px 12px;
+    -webkit-tap-highlight-color: transparent;
   }
 
   h1 {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     font-size: 1.4rem;
     letter-spacing: 0.1em;
     color: #a0c4ff;
   }
 
   .legend {
-    margin-bottom: 28px;
+    margin-bottom: 20px;
     font-size: 0.78rem;
     color: #888;
     text-align: center;
@@ -34,25 +38,31 @@
   }
   .legend span { color: #a0c4ff; }
 
-  /* ピアノ外枠 */
+  .touch-hint { display: none; }
+  @media (hover: none) and (pointer: coarse) {
+    .kb-hint { display: none; }
+    .touch-hint { display: inline; }
+  }
+
   .piano-wrap {
+    width: min(560px, 96vw);
     background: #111;
     border-radius: 12px;
-    padding: 24px 20px 28px;
+    padding: 20px 16px 24px;
     box-shadow: 0 8px 40px rgba(0,0,0,0.7);
   }
 
   .piano {
     position: relative;
     display: flex;
-    height: 200px;
+    touch-action: none;
   }
 
   /* 白鍵 */
   .key {
     position: relative;
-    width: 52px;
-    height: 200px;
+    width: var(--ww, 52px);
+    height: var(--kh, 200px);
     background: #f5f0e8;
     border: 1px solid #999;
     border-radius: 0 0 8px 8px;
@@ -61,66 +71,74 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    padding-bottom: 10px;
-    font-size: 11px;
+    padding-bottom: 8px;
     color: #666;
     font-weight: bold;
     transition: background 0.04s;
     z-index: 1;
   }
-  .key:first-child { border-radius: 0 0 8px 8px; }
 
   .key .note-name {
-    font-size: 9px;
+    font-size: var(--font-note, 9px);
     color: #bbb;
     margin-bottom: 2px;
   }
   .key .key-label {
-    font-size: 13px;
+    font-size: var(--font-key, 13px);
     font-weight: 700;
     color: #777;
   }
 
-  .key.active {
-    background: #a0c4ff;
-  }
+  .key.active { background: #a0c4ff; }
 
   /* 黒鍵 */
   .key.black {
     position: absolute;
-    width: 34px;
-    height: 124px;
+    width: var(--bw, 34px);
+    height: var(--bh, 124px);
     background: #222;
     border: 1px solid #000;
     border-radius: 0 0 6px 6px;
     z-index: 2;
     color: #aaa;
-    font-size: 10px;
-    padding-bottom: 8px;
+    padding-bottom: 6px;
   }
   .key.black .note-name { color: #888; }
-  .key.black .key-label { color: #aaa; font-size: 11px; }
-  .key.black.active {
-    background: #5b8fff;
+  .key.black .key-label { color: #aaa; }
+  .key.black.active { background: #5b8fff; }
+
+  /* タッチ端末ではキーボードラベル非表示 */
+  @media (hover: none) and (pointer: coarse) {
+    .key .key-label { display: none; }
   }
 
-  .sustain-row {
-    margin-top: 22px;
+  .controls {
+    margin-top: 18px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .sustain-row, .octave-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 0.82rem;
     color: #888;
   }
+
   .sustain-btn {
-    padding: 5px 18px;
-    border-radius: 6px;
+    padding: 8px 20px;
+    border-radius: 8px;
     border: 1px solid #444;
     background: #222;
     color: #aaa;
     cursor: pointer;
     font-size: 0.82rem;
     transition: background 0.1s;
+    min-width: 60px;
+    touch-action: manipulation;
   }
   .sustain-btn.on {
     background: #a0c4ff22;
@@ -128,25 +146,19 @@
     color: #a0c4ff;
   }
 
-  .octave-row {
-    margin-top: 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.82rem;
-    color: #888;
-  }
   .octave-btn {
-    width: 28px; height: 28px;
-    border-radius: 6px;
+    width: 36px; height: 36px;
+    border-radius: 8px;
     border: 1px solid #444;
     background: #222;
     color: #aaa;
     cursor: pointer;
     font-size: 1rem;
     display: flex; align-items: center; justify-content: center;
+    touch-action: manipulation;
   }
-  .octave-btn:hover { background: #333; }
+  .octave-btn:active { background: #333; }
+
   #octave-display {
     min-width: 60px;
     text-align: center;
@@ -159,23 +171,25 @@
 
 <h1>キーボードピアノ</h1>
 <div class="legend">
-  白鍵: <span>A S D F G H J K L ;</span> &nbsp;|&nbsp; 黒鍵: <span>W E &nbsp;T Y U &nbsp;O P</span><br>
-  オクターブ: <span>← →</span> キー &nbsp;|&nbsp; サスティン: <span>Space</span>
+  <span class="kb-hint">白鍵: <span>A S D F G H J K L ;</span> &nbsp;|&nbsp; 黒鍵: <span>W E &nbsp;T Y U &nbsp;O P</span><br>
+  オクターブ: <span>← →</span> キー &nbsp;|&nbsp; サスティン: <span>Space</span></span>
+  <span class="touch-hint">タッチで演奏 &nbsp;|&nbsp; 複数の指でコード演奏も可能</span>
 </div>
 
 <div class="piano-wrap">
   <div class="piano" id="piano"></div>
 
-  <div class="sustain-row">
-    <span>サスティン (Space)</span>
-    <button class="sustain-btn" id="sustain-btn">OFF</button>
-  </div>
-
-  <div class="octave-row">
-    <span>オクターブ</span>
-    <button class="octave-btn" id="oct-down">◀</button>
-    <span id="octave-display">オクターブ 4</span>
-    <button class="octave-btn" id="oct-up">▶</button>
+  <div class="controls">
+    <div class="sustain-row">
+      <span>サスティン</span>
+      <button class="sustain-btn" id="sustain-btn">OFF</button>
+    </div>
+    <div class="octave-row">
+      <span>オクターブ</span>
+      <button class="octave-btn" id="oct-down">◀</button>
+      <span id="octave-display">オクターブ 4</span>
+      <button class="octave-btn" id="oct-up">▶</button>
+    </div>
   </div>
 </div>
 
@@ -183,12 +197,10 @@
 // ---- 音源 (Web Audio API) ----
 const ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-// ノート番号→周波数
 function midiToFreq(midi) {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
-// アクティブなオシレータ管理
 const activeNodes = {};
 let sustainOn = false;
 const sustainedKeys = new Set();
@@ -202,7 +214,6 @@ function playNote(midi) {
   osc.type = 'triangle';
   osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
-  // 倍音を少し加えてピアノっぽく
   const osc2 = ctx.createOscillator();
   osc2.type = 'sine';
   osc2.frequency.setValueAtTime(freq * 2, ctx.currentTime);
@@ -211,14 +222,12 @@ function playNote(midi) {
 
   gainNode.gain.setValueAtTime(0, ctx.currentTime);
   gainNode.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.01);
-  // ピアノ的アタック後のデケイ
   gainNode.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.3);
 
   osc.connect(gainNode);
   osc2.connect(gain2);
   gain2.connect(gainNode);
   gainNode.connect(ctx.destination);
-
   osc.start();
   osc2.start();
 
@@ -226,10 +235,7 @@ function playNote(midi) {
 }
 
 function releaseNote(midi) {
-  if (sustainOn) {
-    sustainedKeys.add(midi);
-    return;
-  }
+  if (sustainOn) { sustainedKeys.add(midi); return; }
   stopNote(midi);
 }
 
@@ -251,14 +257,10 @@ function releaseAllSustained() {
 }
 
 // ---- キー定義 ----
-// 白鍵: C D E F G A B C D E  (1オクターブ+2)
-// インデックス 0..9 → オフセット 0,2,4,5,7,9,11,12,14,16
 const WHITE_OFFSETS = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16];
 const WHITE_NAMES   = ['C','D','E','F','G','A','B','C','D','E'];
 const WHITE_KEYS    = ['a','s','d','f','g','h','j','k','l',';'];
 
-// 黒鍵: C# D# _ F# G# A# _ C# D#
-// 白鍵の左端から: 白鍵0と1の間=C#, 1と2=D#, (2と3の間なし=E#ない), 3と4=F#, 4と5=G#, 5と6=A#, (6と7なし), 7と8=C#, 8と9=D#
 const BLACK_DEFS = [
   { afterWhite: 0, offset: 1,  name: 'C#', keyChar: 'w' },
   { afterWhite: 1, offset: 3,  name: 'D#', keyChar: 'e' },
@@ -269,56 +271,118 @@ const BLACK_DEFS = [
   { afterWhite: 8, offset: 15, name: 'D#', keyChar: 'p' },
 ];
 
-let baseOctave = 4;  // C4 = MIDI 60
+let baseOctave = 4;
+function getBaseMidi() { return baseOctave * 12 + 12; }
 
-function getBaseMidi() {
-  return (baseOctave) * 12 + 12; // C4 = 60
+// ---- レスポンシブサイズ計算 ----
+const pianoEl = document.getElementById('piano');
+let WHITE_WIDTH = 52;
+
+function calcKeySize() {
+  const wrap = pianoEl.parentElement;
+  const availW = wrap.clientWidth - 32; // padding 16px × 2
+  WHITE_WIDTH = Math.max(28, Math.floor(availW / 10));
+  const kh = Math.round(WHITE_WIDTH * 3.6);
+  const bw = Math.round(WHITE_WIDTH * 0.62);
+  const bh = Math.round(kh * 0.62);
+  const fontNote = Math.max(7, Math.round(WHITE_WIDTH * 0.18));
+  const fontKey  = Math.max(9, Math.round(WHITE_WIDTH * 0.24));
+  pianoEl.style.setProperty('--ww',        WHITE_WIDTH + 'px');
+  pianoEl.style.setProperty('--kh',        kh + 'px');
+  pianoEl.style.setProperty('--bw',        bw + 'px');
+  pianoEl.style.setProperty('--bh',        bh + 'px');
+  pianoEl.style.setProperty('--font-note', fontNote + 'px');
+  pianoEl.style.setProperty('--font-key',  fontKey + 'px');
+  pianoEl.style.height = kh + 'px';
+  return { bw };
 }
 
 // ---- DOM構築 ----
-const pianoEl = document.getElementById('piano');
-const WHITE_WIDTH = 52;
-
 function buildPiano() {
+  const { bw } = calcKeySize();
   pianoEl.innerHTML = '';
   const baseMidi = getBaseMidi();
 
-  // 白鍵
   WHITE_KEYS.forEach((k, i) => {
     const midi = baseMidi + WHITE_OFFSETS[i];
     const div = document.createElement('div');
     div.className = 'key';
     div.dataset.midi = midi;
-    div.dataset.keychar = k;
     div.innerHTML = `<span class="note-name">${WHITE_NAMES[i]}</span><span class="key-label">${k.toUpperCase()}</span>`;
-    div.addEventListener('mousedown', e => { e.preventDefault(); ctx.resume(); playNote(midi); div.classList.add('active'); });
-    div.addEventListener('mouseup', () => { releaseNote(midi); div.classList.remove('active'); });
-    div.addEventListener('mouseleave', () => { if(activeNodes[midi]) { releaseNote(midi); div.classList.remove('active'); } });
     pianoEl.appendChild(div);
   });
 
-  // 黒鍵 (position absolute)
   BLACK_DEFS.forEach(def => {
     const midi = baseMidi + def.offset;
     const div = document.createElement('div');
     div.className = 'key black';
     div.dataset.midi = midi;
-    div.dataset.keychar = def.keyChar;
-    // 位置: afterWhite番目の白鍵の右端 - 黒鍵幅/2
-    const left = (def.afterWhite + 1) * WHITE_WIDTH - 17;
+    const left = (def.afterWhite + 1) * WHITE_WIDTH - Math.floor(bw / 2);
     div.style.left = left + 'px';
+    div.style.top = '0';
     div.innerHTML = `<span class="note-name">${def.name}</span><span class="key-label">${def.keyChar.toUpperCase()}</span>`;
-    div.addEventListener('mousedown', e => { e.preventDefault(); ctx.resume(); playNote(midi); div.classList.add('active'); });
-    div.addEventListener('mouseup', () => { releaseNote(midi); div.classList.remove('active'); });
-    div.addEventListener('mouseleave', () => { if(activeNodes[midi]) { releaseNote(midi); div.classList.remove('active'); } });
     pianoEl.appendChild(div);
   });
 }
 
 buildPiano();
 
+// ---- ポインターイベント (タッチ・マウス共通) ----
+const activePointers = new Map(); // pointerId → midi
+
+function getMidiAtPoint(x, y) {
+  const el = document.elementFromPoint(x, y);
+  const key = el?.closest('[data-midi]');
+  return key ? Number(key.dataset.midi) : undefined;
+}
+
+pianoEl.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  ctx.resume();
+  const midi = getMidiAtPoint(e.clientX, e.clientY);
+  if (midi !== undefined) {
+    activePointers.set(e.pointerId, midi);
+    playNote(midi);
+    highlightKey(midi, true);
+  }
+}, { passive: false });
+
+pianoEl.addEventListener('pointermove', e => {
+  if (!activePointers.has(e.pointerId)) return;
+  const newMidi = getMidiAtPoint(e.clientX, e.clientY);
+  const oldMidi = activePointers.get(e.pointerId);
+  if (newMidi !== undefined && newMidi !== oldMidi) {
+    releaseNote(oldMidi);
+    highlightKey(oldMidi, false);
+    playNote(newMidi);
+    highlightKey(newMidi, true);
+    activePointers.set(e.pointerId, newMidi);
+  }
+});
+
+function endPointer(e) {
+  const midi = activePointers.get(e.pointerId);
+  if (midi !== undefined) {
+    releaseNote(midi);
+    highlightKey(midi, false);
+    activePointers.delete(e.pointerId);
+  }
+}
+pianoEl.addEventListener('pointerup', endPointer);
+pianoEl.addEventListener('pointercancel', endPointer);
+pianoEl.addEventListener('pointerleave', endPointer);
+
+// ピアノ外でマウスボタンを離した場合の保険
+document.addEventListener('pointerup', e => {
+  if (activePointers.has(e.pointerId)) endPointer(e);
+});
+
+function highlightKey(midi, on) {
+  const el = pianoEl.querySelector(`[data-midi="${midi}"]`);
+  if (el) el.classList.toggle('active', on);
+}
+
 // ---- キーボード操作 ----
-// keyChar → MIDI のマップを動的生成
 function buildKeyMap() {
   const map = {};
   const baseMidi = getBaseMidi();
@@ -332,50 +396,28 @@ const pressedKeys = new Set();
 document.addEventListener('keydown', e => {
   if (e.repeat) return;
   ctx.resume();
-
+  if (e.key === 'ArrowLeft')  { changeOctave(-1); return; }
+  if (e.key === 'ArrowRight') { changeOctave(1);  return; }
+  if (e.key === ' ') { e.preventDefault(); setSustain(true); return; }
   const key = e.key.toLowerCase();
-
-  // オクターブ変更
-  if (e.key === 'ArrowLeft') { changeOctave(-1); return; }
-  if (e.key === 'ArrowRight') { changeOctave(1); return; }
-
-  // サスティン
-  if (e.key === ' ') {
-    e.preventDefault();
-    setSustain(true);
-    return;
-  }
-
   const map = buildKeyMap();
   if (map[key] !== undefined && !pressedKeys.has(key)) {
     pressedKeys.add(key);
-    const midi = map[key];
-    playNote(midi);
-    highlightKey(midi, true);
+    playNote(map[key]);
+    highlightKey(map[key], true);
   }
 });
 
 document.addEventListener('keyup', e => {
+  if (e.key === ' ') { setSustain(false); return; }
   const key = e.key.toLowerCase();
-
-  if (e.key === ' ') {
-    setSustain(false);
-    return;
-  }
-
   const map = buildKeyMap();
   if (map[key] !== undefined) {
     pressedKeys.delete(key);
-    const midi = map[key];
-    releaseNote(midi);
-    highlightKey(midi, false);
+    releaseNote(map[key]);
+    highlightKey(map[key], false);
   }
 });
-
-function highlightKey(midi, on) {
-  const el = pianoEl.querySelector(`[data-midi="${midi}"]`);
-  if (el) el.classList.toggle('active', on);
-}
 
 // ---- サスティン ----
 const sustainBtn = document.getElementById('sustain-btn');
@@ -391,13 +433,25 @@ sustainBtn.addEventListener('click', () => setSustain(!sustainOn));
 function changeOctave(delta) {
   baseOctave = Math.max(1, Math.min(7, baseOctave + delta));
   document.getElementById('octave-display').textContent = `オクターブ ${baseOctave}`;
-  // 鳴っている音を止める
   Object.keys(activeNodes).forEach(m => stopNote(Number(m)));
   pressedKeys.clear();
+  activePointers.clear();
   buildPiano();
 }
 document.getElementById('oct-down').addEventListener('click', () => changeOctave(-1));
 document.getElementById('oct-up').addEventListener('click', () => changeOctave(1));
+
+// ---- リサイズ対応 ----
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    Object.keys(activeNodes).forEach(m => stopNote(Number(m)));
+    activePointers.clear();
+    pressedKeys.clear();
+    buildPiano();
+  }, 150);
+});
 </script>
 </body>
 </html>
